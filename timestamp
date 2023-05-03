@@ -1,0 +1,16 @@
+video at 17:52
+
+errors
+# github.com/uahakim/gobank
+
+./api.go:24:37: http.HandleFunc (value of type func(pattern string, handler func(http.ResponseWriter, *http.Request))) is not a type
+
+./api.go:50:9: router.HandleFunc undefined (type func() *mux.Router has no field or method HandleFunc)
+
+
+./api.go:53:36: cannot use router (variable of type func() *mux.Router) 
+as http.Handler value in argument to 
+http.ListenAndServe: func() *mux.Router does not implement http.Handler 
+(missing method ServeHTTP)
+
+make: *** [Makefile:2: build] Error 1
