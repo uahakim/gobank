@@ -8,6 +8,7 @@ type Account struct {
 	LastName 	string 	`json:"lastName"`
 	Number 		int64 	`json:"number"`
 	Balance 	int64 	`json:"balance"`
+	
 }
 
 func NewAccount(firstName, lastName string) *Account {
