@@ -12,6 +12,21 @@ import (
 )
 
 //start server up
+
+type APIServer struct {
+	listenAddr string
+	store Storage
+}
+
+func NewAPIServer (listenAddr string, store Storage) *APIServer {
+	return &APIServer {
+		listenAddr: listenAddr,
+		store: store,
+	}
+}
+
+
+
 func (s *APIServer) Run() {
 	// from gorilla/mux
 	router := mux.NewRouter()
@@ -65,16 +80,6 @@ func (s *APIServer) handleTransfer (w http.ResponseWriter, r *http.Request) erro
 
 
 //best practice: put least important at the bottom
-type APIServer struct {
-	listenAddr string
-}
-
-func NewAPIServer (listenAddr string) *APIServer {
-	return &APIServer {
-		listenAddr: listenAddr,
-	}
-}
-
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	
