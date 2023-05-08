@@ -32,7 +32,7 @@ func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/account", makeHTTPHandleFunc(s.handleAccount))
-	router.HandleFunc("/account/{id}", makeHTTPHandleFunc(s.handleGetAccount))
+	// router.HandleFunc("/account/{id}", makeHTTPHandleFunc(s.handleGetAccountByID))
 
 	log.Println("JSON API server running on port: ", s.listenAddr)
 	http.ListenAndServe(s.listenAddr, router)
@@ -57,14 +57,25 @@ func (s *APIServer) handleAccount (w http.ResponseWriter, r *http.Request) error
 	return fmt.Errorf("Method not allowed %s", r.Method)
 }
 
-func (s *APIServer) handleGetAccount (w http.ResponseWriter, r *http.Request) error {
-	account := NewAccount("Hakim", "Chulan")
-	return WriteJSON(w, http.StatusOK, account)
+// GET /accounts
+func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error { 
+	accounts, err := s.store.GetAccounts()
 
-	// vars := mux.Vars(r)
-	// fmt.Println(id)
-	// return WriteJSON(w, http.StatusOK, &Account)
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, accounts)
 }
+
+// func (s *APIServer) handleGetAccountByID (w http.ResponseWriter, r *http.Request) error {
+// 	// account := NewAccount("Hakim", "Chulan")
+// 	// return WriteJSON(w, http.StatusOK, account)
+
+// 	vars := mux.Vars(r)["id"]
+// 	fmt.Println(id)
+// 	return WriteJSON(w, http.StatusOK, &Account)
+// }
 
 func (s *APIServer) handleCreateAccount (w http.ResponseWriter, r *http.Request) error {
 
@@ -75,7 +86,7 @@ func (s *APIServer) handleCreateAccount (w http.ResponseWriter, r *http.Request)
 
 	// the same as above but using reference &
 	// createAccountReq := CreateAccountRequest{}
-	// if err := json.NewDecoder(r.body).Decode(&createAccountReq); err != nil {
+	// if err := json.NewDecoder(r.Body).Decode(&createAccountReq); err != nil {
 	// 	return err
 	// }
 
