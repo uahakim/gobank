@@ -77,6 +77,7 @@ func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) err
 // 	return WriteJSON(w, http.StatusOK, &Account)
 // }
 
+// POST /account then send in body firstname and lastname
 func (s *APIServer) handleCreateAccount (w http.ResponseWriter, r *http.Request) error {
 
 	createAccountReq := new(CreateAccountRequest)
