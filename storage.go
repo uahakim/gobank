@@ -17,7 +17,7 @@ type Storage interface {
 
 	GetAccounts() ([]*Account, error) //getting slice of account
 	
-	GetAccountByID() (*Account, error)
+	GetAccountByID(int) (*Account, error)
 }
 
 type PostgresStore struct {
@@ -107,15 +107,8 @@ func (s *PostgresStore) GetAccounts() ([]*Account, error) {
 	accounts := []*Account{}
 
 	for rows.Next() {
-		account := new(Account)
-		err := rows.Scan(
-			&account.ID, 
-			&account.FirstName,
-			&account.LastName,
-			&account.Number,
-			&account.Balance,
-			&account.CreatedAt); 
 		
+		account, err := scanIntoAccount(rows)
 
 		if err != nil {
 			return nil, err
@@ -126,8 +119,29 @@ func (s *PostgresStore) GetAccounts() ([]*Account, error) {
 	return accounts, nil
 }
 
-func (s *PostgresStore) GetAccountByID() (*Account, error) {
-    // implementation code here
+func (s *PostgresStore) GetAccountByID(id int) (*Account, error) {
+    rows, err := s.db.Query("select * from account where id = $1", id)
 
-	return nil, nil
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		return scanIntoAccount(rows)
+	}
+
+	return nil, fmt.Errorf("account %d not found", id)
+}
+
+func scanIntoAccount(rows *sql.Rows) (*Account, error) {
+	account := new(Account)
+	err := rows.Scan(
+		&account.ID, 
+		&account.FirstName,
+		&account.LastName,
+		&account.Number,
+		&account.Balance,
+		&account.CreatedAt); 
+
+	return account, err
 }
