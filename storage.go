@@ -17,7 +17,7 @@ type Storage interface {
 
 	GetAccounts() ([]*Account, error) //getting slice of account
 	
-	GetAccountByID(int) (*Account, error)
+	GetAccountByID() (*Account, error)
 }
 
 type PostgresStore struct {
@@ -96,11 +96,7 @@ func (s *PostgresStore) DeleteAccount(id int) error {
 	return nil
 }
 
-func (s *PostgresStore) GetAccountsByID() (*Account, error) {
-	return nil, nil
-}
-
-func (s *PostgresStore) GetAccounts(id int) (*Account, error) {
+func (s *PostgresStore) GetAccounts() ([]*Account, error) {
 
 	rows, err := s.db.Query("select * from account")
 
@@ -108,7 +104,7 @@ func (s *PostgresStore) GetAccounts(id int) (*Account, error) {
 		return nil, err
 	}
 
-	accounts := []*Accounts {}
+	accounts := []*Account{}
 
 	for rows.Next() {
 		account := new(Account)
@@ -128,4 +124,10 @@ func (s *PostgresStore) GetAccounts(id int) (*Account, error) {
 		accounts = append(accounts, account)
 	}
 	return accounts, nil
+}
+
+func (s *PostgresStore) GetAccountByID() (*Account, error) {
+    // implementation code here
+
+	return nil, nil
 }
