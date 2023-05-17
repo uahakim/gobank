@@ -60,7 +60,10 @@ func (s *APIServer) handleAccount (w http.ResponseWriter, r *http.Request) error
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
-// GET /account
+/**********************
+	GET: /account
+***********************/
+
 func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error { 
 	accounts, err := s.store.GetAccounts()
 
@@ -71,8 +74,11 @@ func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) err
 	return WriteJSON(w, http.StatusOK, accounts)
 }
 
+/**********************
+	GET: /account/{id}
+***********************/
 
-// GET: /account/id
+// 
 func (s *APIServer) handleGetAccountByID (w http.ResponseWriter, r *http.Request) error {
 // 	// account := NewAccount("Hakim", "Chulan")
 // 	// return WriteJSON(w, http.StatusOK, account)
@@ -100,7 +106,10 @@ func (s *APIServer) handleGetAccountByID (w http.ResponseWriter, r *http.Request
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
-// POST /account then send in body firstname and lastname
+/**************************************************************
+	POST /account then send in body "firstName" and "lastName" 
+***************************************************************/
+
 func (s *APIServer) handleCreateAccount (w http.ResponseWriter, r *http.Request) error {
 
 	createAccountReq := new(CreateAccountRequest)
@@ -119,8 +128,20 @@ func (s *APIServer) handleCreateAccount (w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
+	tokenString, err := createJWT(account)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("JWT Token: ", tokenString)
+
 	return WriteJSON(w, http.StatusOK, account)
 }
+
+/************************
+	DELETE /account/{id}
+*************************/
 
 func (s *APIServer) handleDeleteAccount (w http.ResponseWriter, r *http.Request) error {
 
@@ -136,6 +157,10 @@ func (s *APIServer) handleDeleteAccount (w http.ResponseWriter, r *http.Request)
 
 	return WriteJSON(w, http.StatusOK, map[string]int{"deleted": id})
 }
+
+/***************************************************************
+	POST /transer then put "toAccount" and "amount" in the body
+****************************************************************/
 
 func (s *APIServer) handleTransfer (w http.ResponseWriter, r *http.Request) error {
 
@@ -170,12 +195,29 @@ type ApiError struct {
 }
 
 func makeHTTPHandleFunc (f apiFunc) http.HandlerFunc {
+	
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
 			//handle error
 			WriteJSON(w, http.StatusBadRequest, ApiError{Error: err.Error()})
 		}
 	}
+}
+
+func createJWT(account *Account) (string , error) {
+
+	//need to research more!!!
+	claims := &jwt.MapClaims{
+		"expiresAt": 15000,
+		"accountNumber": account.Number,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	secret := os.Getenv("JWT_SECRET")
+
+	return token.SignedString(secret)
+
 }
 
 func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
