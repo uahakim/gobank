@@ -216,7 +216,7 @@ func createJWT(account *Account) (string , error) {
 
 	secret := os.Getenv("JWT_SECRET")
 
-	return token.SignedString(secret)
+	return token.SignedString([]byte(secret)) //cause for the invalid type 
 
 }
 
