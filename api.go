@@ -33,7 +33,7 @@ func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/account", makeHTTPHandleFunc(s.handleAccount))
-	router.HandleFunc("/account/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID)))
+	router.HandleFunc("/account/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleGetAccountByID), s.store))
 	router.HandleFunc("/transfer", makeHTTPHandleFunc(s.handleTransfer))
 
 	log.Println("JSON API server running on port: ", s.listenAddr)
@@ -80,8 +80,6 @@ func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) err
 
 // 
 func (s *APIServer) handleGetAccountByID (w http.ResponseWriter, r *http.Request) error {
-// 	// account := NewAccount("Hakim", "Chulan")
-// 	// return WriteJSON(w, http.StatusOK, account)
 
 	if r.Method == "GET" {
 		id, err := getID(r);
@@ -204,6 +202,8 @@ func makeHTTPHandleFunc (f apiFunc) http.HandlerFunc {
 	}
 }
 
+// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50TnVtYmVyIjoxNjc2NjAsImV4cGlyZXNBdCI6MTUwMDB9.EGYPPg5k1aEUkzzlwM947rztlQZS3uwfsYa-Oz-aVuE
+
 func createJWT(account *Account) (string , error) {
 
 	//need to research more!!!
@@ -220,24 +220,73 @@ func createJWT(account *Account) (string , error) {
 
 }
 
-func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 
+/* HIS */
+func permissionDenied(w http.ResponseWriter) {
+	WriteJSON(w, http.StatusForbidden, ApiError{Error: "permission denied"})
+}
+
+// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50TnVtYmVyIjo0OTgwODEsImV4cGlyZXNBdCI6MTUwMDB9.TdQ907o9yhUI2KU0TngrqO-xbfNgHAfZI6Jngia15UE
+
+func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("calling AWT auth middleware")
+		fmt.Println("calling JWT auth middleware")
 
 		tokenString := r.Header.Get("x-jwt-token")
+		token, err := validateJWT(tokenString)
+		if err != nil {
+			permissionDenied(w)
+			return
+		}
+		if !token.Valid {
+			permissionDenied(w)
+			return
+		}
+		userID, err := getID(r)
+		if err != nil {
+			permissionDenied(w)
+			return
+		}
+		account, err := s.GetAccountByID(userID)
+		if err != nil {
+			permissionDenied(w)
+			return
+		}
 
-		_, err := validateJWT(tokenString)
+		claims := token.Claims.(jwt.MapClaims)
+		if account.Number != int64(claims["accountNumber"].(float64)) {
+			// permissionDenied(w)
+			WriteJSON(w, http.StatusForbidden, ApiError{Error: "account number do not match with map claims"})
+			fmt.Println("account.Number\t\t:", account.Number)
+			fmt.Println("claims[accountNumber]\t:", claims["accountNumber"])
+
+			return
+		}
 
 		if err != nil {
 			WriteJSON(w, http.StatusForbidden, ApiError{Error: "invalid token"})
-			return 
+			return
 		}
 
 		handlerFunc(w, r)
 	}
 }
 
+/*
+
+To investigate the issue further, you can check the following:
+
+    1. Validate that the account.Number and claims["accountNumber"] values have the 
+	expected data types and values.
+    2. Verify that the token is being properly validated and the claims are correctly extracted.
+    3. Check the database to ensure that the account number stored for the 
+	user associated with the token matches the expected value.
+    4. Review the data flow and any relevant operations between the token generation, 
+	validation, and database storage to identify any potential issues or inconsistencies.
+
+By examining these aspects, you should be able to pinpoint the cause of the account number mismatch.
+
+*/
 func validateJWT(tokenString string) (*jwt.Token, error) {
 
 	secret := os.Getenv("JWT_SECRET")
